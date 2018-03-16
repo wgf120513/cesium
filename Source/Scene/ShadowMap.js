@@ -1481,7 +1481,7 @@ define([
             var shaderProgram = command.shaderProgram;
 
             var isTerrain = command.pass === Pass.GLOBE;
-            var isOpaque = command.pass !== Pass.TRANSLUCENT;
+            var isOpaque = command.pass !== Pass.TRANSLUCENT && command.pass !== Pass.TRANSLUCENT_BILLBOARD;
             var isPointLight = shadowMap._isPointLight;
             var usesDepthTexture= shadowMap._usesDepthTexture;
 

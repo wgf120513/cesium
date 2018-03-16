@@ -1429,7 +1429,7 @@ define([
             }
 
             var oit = scene._oit;
-            if (command.pass === Pass.TRANSLUCENT && defined(oit) && oit.isSupported()) {
+            if ((command.pass === Pass.TRANSLUCENT || command.pass === Pass.TRANSLUCENT_BILLBOARD)&& defined(oit) && oit.isSupported()) {
                 if (lightShadowsEnabled && command.receiveShadows) {
                     derivedCommands.oit = defined(derivedCommands.oit) ? derivedCommands.oit : {};
                     derivedCommands.oit.shadows = oit.createDerivedCommands(command.derivedCommands.shadows.receiveCommand, context, derivedCommands.oit.shadows);
@@ -2266,6 +2266,13 @@ define([
                 executeCommand(commands[j], scene, context, passState);
             }
 
+            us.updatePass(Pass.OPAQUE_BILLBOARD); //TODO did Dan say do this or don't do this?
+            commands = frustumCommands.commands[Pass.OPAQUE_BILLBOARD];
+            length = frustumCommands.indices[Pass.OPAQUE_BILLBOARD];
+            for (j = 0; j < length; ++j) {
+                executeCommand(commands[j], scene, context, passState);
+            }
+
             if (index !== 0 && scene.mode !== SceneMode.SCENE2D) {
                 // Do not overlap frustums in the translucent pass to avoid blending artifacts
                 frustum.near = frustumCommands.near;
@@ -2282,6 +2289,11 @@ define([
             us.updatePass(Pass.TRANSLUCENT);
             commands = frustumCommands.commands[Pass.TRANSLUCENT];
             commands.length = frustumCommands.indices[Pass.TRANSLUCENT];
+            executeTranslucentCommands(scene, executeCommand, passState, commands, invertClassification);
+
+            us.updatePass(Pass.TRANSLUCENT_BILLBOARD);
+            commands = frustumCommands.commands[Pass.TRANSLUCENT_BILLBOARD];
+            commands.length = frustumCommands.indices[Pass.TRANSLUCENT_BILLBOARD];
             executeTranslucentCommands(scene, executeCommand, passState, commands, invertClassification);
 
             if (defined(globeDepth) && (environmentState.useGlobeDepthFramebuffer || depthOnly) && scene.useDepthPicking) {
@@ -2333,7 +2345,9 @@ define([
             var command = commandList[i];
             updateDerivedCommands(scene, command);
 
-            if (command.castShadows && (command.pass === Pass.GLOBE || command.pass === Pass.CESIUM_3D_TILE || command.pass === Pass.OPAQUE || command.pass === Pass.TRANSLUCENT)) {
+            if (command.castShadows &&
+                (command.pass === Pass.GLOBE || command.pass === Pass.CESIUM_3D_TILE || command.pass === Pass.OPAQUE ||
+                 command.pass === Pass.TRANSLUCENT || command.pass === Pass.OPAQUE_BILLBOARD || command.pass === Pass.TRANSLUCENT_BILBOARD)) {
                 if (isVisible(command, shadowVolume)) {
                     if (isPointLight) {
                         for (var k = 0; k < numberOfPasses; ++k) {

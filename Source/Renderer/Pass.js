@@ -26,9 +26,11 @@ define([
         CESIUM_3D_TILE_CLASSIFICATION_IGNORE_SHOW : 6,
         CLASSIFICATION : 7,
         OPAQUE : 8,
-        TRANSLUCENT : 9,
-        OVERLAY : 10,
-        NUMBER_OF_PASSES : 11
+        OPAQUE_BILLBOARD : 9,
+        TRANSLUCENT : 10,
+        TRANSLUCENT_BILLBOARD : 11,
+        OVERLAY : 12,
+        NUMBER_OF_PASSES : 13
     };
 
     return freezeObject(Pass);

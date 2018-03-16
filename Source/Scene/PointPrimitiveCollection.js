@@ -1052,7 +1052,7 @@ define([
                 }
 
                 command.primitiveType = PrimitiveType.POINTS;
-                command.pass = opaqueCommand || !opaqueAndTranslucent ? Pass.OPAQUE : Pass.TRANSLUCENT;
+                command.pass = opaqueCommand || !opaqueAndTranslucent ? Pass.OPAQUE_BILLBOARD : Pass.TRANSLUCENT_BILLBOARD;
                 command.owner = this;
 
                 var index = opaqueAndTranslucent ? Math.floor(j / 2.0) : j;
@@ -1080,7 +1080,7 @@ define([
                 if (!defined(command)) {
                     command = pickList[j] = new DrawCommand({
                         primitiveType : PrimitiveType.POINTS,
-                        pass : Pass.OPAQUE,
+                        pass : Pass.OPAQUE_BILLBOARD,
                         owner : this
                     });
                 }
