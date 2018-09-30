@@ -61,8 +61,7 @@ define([
 
     /**
      * A {@link TerrainProvider} that accesses terrain data in a Cesium terrain format.
-     * The format is described on the
-     * {@link https://github.com/AnalyticalGraphicsInc/cesium/wiki/Cesium-Terrain-Server|Cesium wiki}.
+     * The supported formats are described on the {@link https://cesiumjs.org/data-and-assets/terrain/formats/|Terrain Formats page}.
      *
      * @alias CesiumTerrainProvider
      * @constructor
@@ -81,7 +80,7 @@ define([
      *     terrainProvider : new Cesium.CesiumTerrainProvider({
      *         url : Cesium.IonResource.fromAssetId(3956),
      *         requestVertexNormals : true
-     *     });
+     *     })
      * });
      *
      * @see createWorldTerrain
@@ -93,10 +92,6 @@ define([
             throw new DeveloperError('options.url is required.');
         }
         //>>includeEnd('debug');
-
-        if (defined(options.proxy)) {
-            deprecationWarning('CesiumTerrainProvider.proxy', 'The options.proxy parameter has been deprecated. Specify options.url as a Resource instance and set the proxy property there.');
-        }
 
         this._tilingScheme = new GeographicTilingScheme({
             numberOfLevelZeroTilesX : 2,
@@ -131,7 +126,7 @@ define([
 
         var credit = options.credit;
         if (typeof credit === 'string') {
-            credit = new Credit({text: credit});
+            credit = new Credit(credit);
         }
         this._credit = credit;
 
@@ -152,9 +147,7 @@ define([
         var overallAvailability = [];
         when(options.url)
             .then(function(url) {
-                var resource = Resource.createIfNeeded(url, {
-                    proxy: options.proxy
-                });
+                var resource = Resource.createIfNeeded(url);
                 resource.appendForwardSlash();
                 lastResource = resource;
                 metadataResource = lastResource.getDerivedResource({
@@ -163,12 +156,11 @@ define([
 
                 var uri = new Uri(metadataResource.url);
                 if (uri.authority === 'assets.agi.com') {
-                    var deprecationText = 'The STK World Terrain tileset is deprecated and will be available until September 1, 2018';
-                    var deprecationLinkText = 'Check out the new high-resolution Cesium World Terrain';
+                    var deprecationText = 'STK World Terrain at assets.agi.com was shut down on October 1, 2018.';
+                    var deprecationLinkText = 'Check out the new high-resolution Cesium World Terrain for migration instructions.';
                     var deprecationLink = 'https://cesium.com/blog/2018/03/01/introducing-cesium-world-terrain/';
                     that._tileCredits = [
-                        new Credit({ text: deprecationText, showOnScreen: true }),
-                        new Credit({ text: deprecationLinkText, link: deprecationLink, showOnScreen: true })
+                        new Credit('<span><b>' + deprecationText + '</b></span> <a href="' + deprecationLink + '">' + deprecationLinkText + '</a>', true)
                     ];
                     deprecationWarning('assets.agi.com', deprecationText + ' ' + deprecationLinkText + ' ' + deprecationLink);
                 } else {
@@ -327,12 +319,14 @@ define([
                         }
                     }
 
-                    var layerJsonCredit = new Credit({ text: attribution });
+                    if (attribution.length > 0) {
+                        var layerJsonCredit = new Credit(attribution);
 
-                    if (defined(that._tileCredits)) {
-                        that._tileCredits.push(layerJsonCredit);
-                    } else {
-                        that._tileCredits = [layerJsonCredit];
+                        if (defined(that._tileCredits)) {
+                            that._tileCredits.push(layerJsonCredit);
+                        } else {
+                            that._tileCredits = [layerJsonCredit];
+                        }
                     }
 
                     that._ready = true;
@@ -623,26 +617,40 @@ define([
             extensionList.push('watermask');
         }
 
-        var resource = layerToUse.resource.getDerivedResource({
-            url: urlTemplates[(x + tmsY + level) % urlTemplates.length],
+        var headers;
+        var query;
+        var url = urlTemplates[(x + tmsY + level) % urlTemplates.length];
+        var resource = layerToUse.resource;
+        if (defined(resource._ionEndpoint) && !defined(resource._ionEndpoint.externalType)) {
+            // ion uses query paremeters to request extensions
+            if (extensionList.length !== 0) {
+                query = { extensions: extensionList.join('-') };
+            }
+            headers = getRequestHeader(undefined);
+        } else {
+            //All other terrain servers
+            headers = getRequestHeader(extensionList);
+        }
+
+        var promise = resource.getDerivedResource({
+            url: url,
             templateValues: {
                 version: layerToUse.version,
                 z: level,
                 x: x,
                 y: tmsY
             },
-            headers: getRequestHeader(extensionList),
+            queryParameters: query,
+            headers: headers,
             request: request
-        });
-
-        var promise = resource.fetchArrayBuffer();
+        }).fetchArrayBuffer();
 
         if (!defined(promise)) {
             return undefined;
         }
 
         var that = this;
-        return when(promise, function(buffer) {
+        return promise.then(function (buffer) {
             if (defined(that._heightmapStructure)) {
                 return createHeightmapTerrainData(that, buffer, level, x, y, tmsY);
             }

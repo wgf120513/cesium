@@ -49,7 +49,7 @@ defineSuite([
                     '<DataExtent minx="24.999584" miny="-0.000417" maxx="30.000417" maxy="5.000417" minlevel="0" maxlevel="13"/>' +
                     '</DataExtents>' +
                     '</TileMap>';
-                var xml = parser.parseFromString(xmlString, "text/xml");
+                var xml = parser.parseFromString(xmlString, 'text/xml');
                 deferred.resolve(xml);
             }, 1);
         };
@@ -202,7 +202,7 @@ defineSuite([
                     '<DataExtent minx="24.999584" miny="-0.000417" maxx="30.000417" maxy="5.000417" minlevel="0" maxlevel="13"/>' +
                     '</DataExtents>' +
                     '</TileMap>';
-                var xml = parser.parseFromString(xmlString, "text/xml");
+                var xml = parser.parseFromString(xmlString, 'text/xml');
                 deferred.resolve(xml);
             }, 1);
         };
@@ -230,29 +230,6 @@ defineSuite([
             expect(function() {
                 terrainProvider.requestTileGeometry(0, 0, 0);
             }).toThrowDeveloperError();
-        });
-
-        it('uses the proxy if one is supplied', function() {
-            var baseUrl = 'made/up/url';
-
-            Resource._Implementations.createImage = function(url, crossOrigin, deferred) {
-                expect(url.indexOf('/proxy/?')).toBe(0);
-                expect(url.indexOf(encodeURIComponent('.tif?cesium=true'))).toBeGreaterThanOrEqualTo(0);
-
-                // Just return any old image.
-                Resource._DefaultImplementations.createImage('Data/Images/Red16x16.png', crossOrigin, deferred);
-            };
-
-            var terrainProvider = new VRTheWorldTerrainProvider({
-                url : baseUrl,
-                proxy : new DefaultProxy('/proxy/')
-            });
-
-            return pollToPromise(function() {
-                return terrainProvider.ready;
-            }).then(function() {
-                return terrainProvider.requestTileGeometry(0, 0, 0);
-            });
         });
 
         it('provides HeightmapTerrainData', function() {
